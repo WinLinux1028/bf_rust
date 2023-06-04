@@ -50,21 +50,24 @@ fn exec(script: &[char], memory: &mut VecDeque<i128>, pointer: &mut usize, noexe
                 memory[*pointer] -= 1;
             } else if script[i] == '.' {
                 // ポインタの指す先の値を文字として画面に出力する
+                let mut stdout = std::io::stdout();
                 if let Ok(output) = u8::try_from(memory[*pointer]) {
                     // u8に変換できるならUTF-8として出力する
-                    let _ = std::io::stdout().write_all(&[output]);
-                } else {
+                    let _ = stdout.write_all(&[output]);
+                } else if let Ok(output) = u32::try_from(memory[*pointer]) {
                     // そうでないならUTF-32として出力する
-                    let output = u32::try_from(memory[*pointer]).unwrap();
-                    let output: char = unsafe { std::mem::transmute(output) };
-                    print!("{}", output);
+                    if let Some(output) = char::from_u32(output) {
+                        print!("{}", output);
+                    }
                 }
-                let _ = std::io::stdout().flush();
+                let _ = stdout.flush();
             } else if script[i] == ',' {
                 // 入力を1バイト受けとり､ポインタの指す先に書き込む
+                let mut stdin = std::io::stdin();
                 let mut buf = [0];
-                std::io::stdin().read_exact(&mut buf).unwrap();
-                memory[*pointer] = buf[0] as i128;
+                if stdin.read_exact(&mut buf).is_ok() {
+                    memory[*pointer] = buf[0] as i128;
+                }
             }
         }
 
